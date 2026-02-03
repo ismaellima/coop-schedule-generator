@@ -18,6 +18,8 @@ import { ScheduleTable } from "./components/ScheduleTable";
 
 type View = "schedule" | "members";
 
+const ADMIN_PASSWORD = "aupieddelamontagne";
+
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(2026, i).toLocaleDateString("fr-CA", { month: "long" }),
@@ -48,12 +50,68 @@ function LoadingSpinner() {
   );
 }
 
+function PasswordModal({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("coop-admin", "true");
+      onSuccess();
+    } else {
+      setError(true);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+      <form
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4"
+      >
+        <h3 className="text-lg font-bold text-gray-900">Mode administrateur</h3>
+        <p className="text-sm text-gray-500">Entrez le mot de passe pour modifier les données.</p>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => { setPassword(e.target.value); setError(false); }}
+          className={`w-full border-2 rounded-xl px-4 py-3 outline-none transition-colors ${
+            error ? "border-red-400" : "border-gray-200 focus:border-orange-400"
+          }`}
+          placeholder="Mot de passe"
+          autoFocus
+        />
+        {error && <p className="text-sm text-red-500">Mot de passe incorrect</p>}
+        <div className="flex gap-3 justify-end pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="border border-gray-300 px-5 py-2 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            className="bg-orange-500 text-white px-5 py-2 rounded-xl font-medium hover:bg-orange-600 transition-colors"
+          >
+            Connexion
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("schedule");
   const [members, setMembers] = useState<Member[]>([]);
   const [editing, setEditing] = useState<Member | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const now = new Date();
   const [startMonth, setStartMonth] = useState(now.getMonth());
@@ -210,28 +268,51 @@ export default function App() {
               <p className="text-xs text-gray-400">Générateur d'horaires de ménage</p>
             </div>
           </div>
-          <nav className="flex border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setView("schedule")}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-                view === "schedule" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <CalendarIcon className="w-4 h-4" />
-              Horaire
-            </button>
-            <button
-              onClick={() => setView("members")}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${
-                view === "members" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Membres
-            </button>
-          </nav>
+          <div className="flex items-center gap-3">
+            <nav className="flex border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setView("schedule")}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
+                  view === "schedule" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4" />
+                Horaire
+              </button>
+              <button
+                onClick={() => setView("members")}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${
+                  view === "members" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Membres
+              </button>
+            </nav>
+            {isAdmin ? (
+              <button
+                onClick={() => { sessionStorage.removeItem("coop-admin"); setIsAdmin(false); }}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Admin
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Admin
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -273,59 +354,61 @@ export default function App() {
               </div>
             </div>
 
-            {/* Generator card */}
-            <div className="bg-white rounded-xl border-2 border-dashed border-orange-300 p-6">
-              <div className="flex items-center gap-2 mb-5">
-                <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <h2 className="text-lg font-semibold text-orange-600">Générer un horaire</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-                  <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2.5 gap-2">
-                    <CalendarIcon className="w-4 h-4 text-gray-400" />
+            {/* Generator card - only for admin */}
+            {isAdmin && (
+              <div className="bg-white rounded-xl border-2 border-dashed border-orange-300 p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <svg className="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-orange-600">Générer un horaire</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2.5 gap-2">
+                      <CalendarIcon className="w-4 h-4 text-gray-400" />
+                      <select
+                        value={startMonth}
+                        onChange={(e) => setStartMonth(+e.target.value)}
+                        className="flex-1 outline-none bg-transparent"
+                      >
+                        {MONTH_OPTIONS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={startYear}
+                        onChange={(e) => setStartYear(+e.target.value)}
+                        className="w-16 outline-none bg-transparent text-right"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Durée</label>
                     <select
-                      value={startMonth}
-                      onChange={(e) => setStartMonth(+e.target.value)}
-                      className="flex-1 outline-none bg-transparent"
+                      value={durationWeeks}
+                      onChange={(e) => setDurationWeeks(+e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 outline-none"
                     >
-                      {MONTH_OPTIONS.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
+                      {DURATION_OPTIONS.map((d) => (
+                        <option key={d.value} value={d.value}>{d.label}</option>
                       ))}
                     </select>
-                    <input
-                      type="number"
-                      value={startYear}
-                      onChange={(e) => setStartYear(+e.target.value)}
-                      className="w-16 outline-none bg-transparent text-right"
-                    />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Durée</label>
-                  <select
-                    value={durationWeeks}
-                    onChange={(e) => setDurationWeeks(+e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 outline-none"
-                  >
-                    {DURATION_OPTIONS.map((d) => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <button
+                  onClick={handleGenerate}
+                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Générer l'horaire
+                </button>
               </div>
-              <button
-                onClick={handleGenerate}
-                className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Générer l'horaire
-              </button>
-            </div>
+            )}
 
             {/* Schedule result or empty state */}
             {schedule ? (
@@ -384,15 +467,17 @@ export default function App() {
                           </p>
                         </div>
                       </button>
-                      <button
-                        onClick={() => handleDeleteSchedule(saved.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                        title="Supprimer"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteSchedule(saved.id)}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Supprimer"
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -407,18 +492,20 @@ export default function App() {
               <h2 className="text-xl font-bold text-gray-900">
                 Gestion des membres ({members.length})
               </h2>
-              <button
-                onClick={() => {
-                  setEditing(null);
-                  setShowForm(true);
-                }}
-                className="bg-orange-500 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                </svg>
-                Ajouter un membre
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setEditing(null);
+                    setShowForm(true);
+                  }}
+                  className="bg-orange-500 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                  </svg>
+                  Ajouter un membre
+                </button>
+              )}
             </div>
             <MemberList
               members={members}
@@ -427,6 +514,7 @@ export default function App() {
                 setShowForm(true);
               }}
               onDelete={handleDelete}
+              isAdmin={isAdmin}
             />
           </div>
         )}
@@ -441,6 +529,13 @@ export default function App() {
             setEditing(null);
             setShowForm(false);
           }}
+        />
+      )}
+
+      {showPasswordModal && (
+        <PasswordModal
+          onSuccess={() => { setIsAdmin(true); setShowPasswordModal(false); }}
+          onCancel={() => setShowPasswordModal(false)}
         />
       )}
     </div>

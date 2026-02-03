@@ -5,6 +5,7 @@ interface Props {
   members: Member[];
   onEdit: (member: Member) => void;
   onDelete: (id: string) => void;
+  isAdmin?: boolean;
 }
 
 const FLOOR_DOT_COLOR: Record<Floor, string> = {
@@ -55,7 +56,7 @@ function TrashIcon() {
   );
 }
 
-export function MemberList({ members, onEdit, onDelete }: Props) {
+export function MemberList({ members, onEdit, onDelete, isAdmin = false }: Props) {
   if (members.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -116,14 +117,16 @@ export function MemberList({ members, onEdit, onDelete }: Props) {
                         <span className="text-xs text-gray-400">0 tâches assignées</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 text-gray-400">
-                      <button onClick={() => onEdit(m)} className="hover:text-gray-600 transition-colors" title="Modifier">
-                        <EditIcon />
-                      </button>
-                      <button onClick={() => onDelete(m.id)} className="hover:text-red-500 transition-colors" title="Supprimer">
-                        <TrashIcon />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex gap-2 text-gray-400">
+                        <button onClick={() => onEdit(m)} className="hover:text-gray-600 transition-colors" title="Modifier">
+                          <EditIcon />
+                        </button>
+                        <button onClick={() => onDelete(m.id)} className="hover:text-red-500 transition-colors" title="Supprimer">
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
