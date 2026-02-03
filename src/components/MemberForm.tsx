@@ -17,6 +17,7 @@ const FLOOR_OPTIONS: { value: Floor; label: string }[] = [
 
 export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [floor, setFloor] = useState<Floor>("rez-de-chaussee");
   const [reducedMobility, setReducedMobility] = useState(false);
   const [pairedWith, setPairedWith] = useState<string>("");
@@ -24,6 +25,7 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
   useEffect(() => {
     if (member) {
       setName(member.name);
+      setEmail(member.email || "");
       setFloor(member.floorRestrictions[0] || "rez-de-chaussee");
       setReducedMobility(member.roleRestrictions.length > 0);
       setPairedWith(member.pairedWith || "");
@@ -36,6 +38,7 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
     onSave({
       id: member?.id || uuid(),
       name: name.trim(),
+      email: email.trim(),
       floorRestrictions: [floor],
       roleRestrictions: reducedMobility ? ["balayeuse"] : [],
       pairedWith: pairedWith || null,
@@ -78,6 +81,18 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
             placeholder="Entrez le nom..."
             required
             autoFocus
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">Courriel</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-orange-400 outline-none transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="exemple@email.com"
           />
         </div>
 

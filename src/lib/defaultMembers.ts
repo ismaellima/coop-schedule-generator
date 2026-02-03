@@ -5,6 +5,7 @@ function m(name: string, floor: Floor, overrides?: Partial<Member>): Member {
   return {
     id: uuid(),
     name,
+    email: "",
     floorRestrictions: [floor],
     roleRestrictions: [],
     pairedWith: null,

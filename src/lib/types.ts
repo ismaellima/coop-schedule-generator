@@ -19,6 +19,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 export interface Member {
   id: string;
   name: string;
+  email: string;              // for sending reminders
   floorRestrictions: Floor[]; // if non-empty, can ONLY work these floors
   roleRestrictions: Role[];   // if non-empty, can ONLY do these roles
   pairedWith: string | null;  // member ID — must be scheduled same week

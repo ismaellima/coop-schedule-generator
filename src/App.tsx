@@ -112,6 +112,8 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
 
   const now = new Date();
   const [startMonth, setStartMonth] = useState(now.getMonth());
@@ -244,6 +246,33 @@ export default function App() {
     a.download = `horaire-menage-${scheduleTitle.replace(/\s+/g, "-").toLowerCase()}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSendTestEmail = async () => {
+    setSendingTestEmail(true);
+    setTestEmailStatus(null);
+    try {
+      const response = await fetch('/api/send-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberName: 'Ismael (Test)',
+          memberEmail: 'ismaeldf@gmail.com',
+          task: 'Balayeuse - Rez-de-chaussée',
+          date: '8 février',
+          testMode: true,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setTestEmailStatus('Email envoyé avec succès!');
+      } else {
+        setTestEmailStatus(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      setTestEmailStatus('Erreur de connexion');
+    }
+    setSendingTestEmail(false);
   };
 
   if (loading) {
@@ -414,15 +443,34 @@ export default function App() {
             {schedule ? (
               <div className="space-y-4">
                 <ScheduleTable title={scheduleTitle} weeks={schedule} />
-                <button
-                  onClick={handleDownloadPDF}
-                  className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Télécharger PDF
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Télécharger PDF
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={handleSendTestEmail}
+                      disabled={sendingTestEmail}
+                      className="bg-teal-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {sendingTestEmail ? 'Envoi...' : 'Tester email rappel'}
+                    </button>
+                  )}
+                </div>
+                {testEmailStatus && (
+                  <p className={`text-sm ${testEmailStatus.includes('succès') ? 'text-green-600' : 'text-red-600'}`}>
+                    {testEmailStatus}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
