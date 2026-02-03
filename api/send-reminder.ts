@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const toEmail = testMode ? TEST_EMAIL : memberEmail;
 
     const { data, error } = await resend.emails.send({
-      from: 'Coop au pied de la montagne <onboarding@resend.dev>',
+      from: 'Comité d\'entretien <onboarding@resend.dev>',
       to: toEmail,
       subject: `Rappel: Ménage ce samedi ${date}`,
       html: `
@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           <p>Merci de votre collaboration!</p>
           <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
           <p style="color: #666; font-size: 12px;">
-            Coop au pied de la montagne - Générateur d'horaires de ménage
+            Coop au pied de la montagne — Comité d'entretien
           </p>
           ${testMode ? '<p style="color: #f97316; font-size: 12px;"><strong>MODE TEST</strong> - Cet email a été envoyé à l\'adresse de test.</p>' : ''}
         </div>
