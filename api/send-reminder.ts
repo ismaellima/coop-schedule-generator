@@ -27,6 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data, error } = await resend.emails.send({
       from: 'Comité d\'entretien <onboarding@resend.dev>',
+      replyTo: 'entretiencoopmontagne@gmail.com',
       to: toEmail,
       subject: `Rappel: Ménage ce samedi ${date}`,
       html: `
