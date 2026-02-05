@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Member, WeekAssignment } from "../lib/types";
 import { getMemberTasks } from "../lib/icsGenerator";
 
@@ -25,14 +25,43 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
   const [summary, setSummary] = useState<{ sent: number; failed: number } | null>(null);
 
   // Get members with their tasks
-  const membersWithTasks = members
-    .filter(m => m.active && m.email)
-    .map(m => ({
-      memberName: m.name,
-      memberEmail: m.email,
-      tasks: getMemberTasks(m.name, weeks).map(t => ({ date: t.date, task: t.task })),
-    }))
-    .filter(m => m.tasks.length > 0);
+  const membersWithTasks = useMemo(() => {
+    return members
+      .filter(m => m.active && m.email)
+      .map(m => ({
+        memberName: m.name,
+        memberEmail: m.email,
+        tasks: getMemberTasks(m.name, weeks).map(t => ({ date: t.date, task: t.task })),
+      }))
+      .filter(m => m.tasks.length > 0);
+  }, [members, weeks]);
+
+  // Track selected members (all selected by default)
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(() =>
+    new Set(membersWithTasks.map(m => m.memberEmail))
+  );
+
+  const selectedMembers = membersWithTasks.filter(m => selectedEmails.has(m.memberEmail));
+
+  const toggleMember = (email: string) => {
+    setSelectedEmails(prev => {
+      const next = new Set(prev);
+      if (next.has(email)) {
+        next.delete(email);
+      } else {
+        next.add(email);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedEmails(new Set(membersWithTasks.map(m => m.memberEmail)));
+  };
+
+  const deselectAll = () => {
+    setSelectedEmails(new Set());
+  };
 
   const handleSend = async () => {
     setSending(true);
@@ -46,7 +75,7 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
         body: JSON.stringify({
           scheduleTitle,
           customMessage,
-          members: membersWithTasks,
+          members: selectedMembers,
           testMode,
         }),
       });
@@ -104,27 +133,62 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
             />
           </div>
 
-          {/* Preview */}
+          {/* Preview with checkboxes */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Aperçu des destinataires ({membersWithTasks.length} membres avec tâches)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Destinataires ({selectedMembers.length} / {membersWithTasks.length} sélectionnés)
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={selectAll}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Tout sélectionner
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={deselectAll}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+                >
+                  Tout désélectionner
+                </button>
+              </div>
+            </div>
             <div className="border border-gray-200 rounded-xl max-h-48 overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="text-left px-4 py-2 font-medium text-gray-700">Membre</th>
-                    <th className="text-left px-4 py-2 font-medium text-gray-700">Tâches</th>
+                    <th className="w-10 px-3 py-2"></th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-700">Membre</th>
+                    <th className="text-left px-3 py-2 font-medium text-gray-700">Tâches</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {membersWithTasks.map((m) => (
-                    <tr key={m.memberEmail}>
-                      <td className="px-4 py-2">
+                    <tr
+                      key={m.memberEmail}
+                      className={`cursor-pointer hover:bg-gray-50 ${
+                        selectedEmails.has(m.memberEmail) ? '' : 'opacity-50'
+                      }`}
+                      onClick={() => toggleMember(m.memberEmail)}
+                    >
+                      <td className="px-3 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmails.has(m.memberEmail)}
+                          onChange={() => toggleMember(m.memberEmail)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
                         <div className="font-medium text-gray-900">{m.memberName}</div>
                         <div className="text-xs text-gray-400">{m.memberEmail}</div>
                       </td>
-                      <td className="px-4 py-2 text-gray-600">
+                      <td className="px-3 py-2 text-gray-600">
                         {m.tasks.map(t => t.date).join(', ')}
                       </td>
                     </tr>
@@ -140,8 +204,8 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
               <p className="text-sm font-semibold text-amber-800">Mode test</p>
               <p className="text-xs text-amber-600">
                 {testMode
-                  ? "Les emails seront envoyés uniquement à ismaeldf@gmail.com"
-                  : "Les emails seront envoyés à tous les membres"}
+                  ? `${selectedMembers.length} email(s) seront envoyés à ismaeldf@gmail.com`
+                  : `Les emails seront envoyés aux ${selectedMembers.length} membres sélectionnés`}
               </p>
             </div>
             <button
@@ -205,7 +269,7 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
           </button>
           <button
             onClick={handleSend}
-            disabled={sending || membersWithTasks.length === 0}
+            disabled={sending || selectedMembers.length === 0}
             className={`px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 ${
               testMode
                 ? 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50'
@@ -225,7 +289,7 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                {testMode ? 'Envoyer le test' : `Envoyer à ${membersWithTasks.length} membres`}
+                {testMode ? `Envoyer ${selectedMembers.length} test(s)` : `Envoyer à ${selectedMembers.length} membres`}
               </>
             )}
           </button>
