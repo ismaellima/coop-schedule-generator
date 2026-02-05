@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Member, WeekAssignment } from "../lib/types";
 import { getMemberTasks } from "../lib/icsGenerator";
+import { loadScheduleEmailMessage, saveScheduleEmailMessage } from "../lib/storage";
 
 interface Props {
   scheduleTitle: string;
@@ -15,14 +16,23 @@ interface SendResult {
   error?: string;
 }
 
+const DEFAULT_MESSAGE = "Voici l'horaire de ménage pour les prochaines semaines. Vous trouverez ci-dessous vos tâches assignées ainsi qu'un fichier calendrier pour les ajouter facilement à votre téléphone.";
+
 export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Props) {
-  const [customMessage, setCustomMessage] = useState(
-    "Voici l'horaire de ménage pour les prochaines semaines. Vous trouverez ci-dessous vos tâches assignées ainsi qu'un fichier calendrier pour les ajouter facilement à votre téléphone."
-  );
+  const [customMessage, setCustomMessage] = useState(DEFAULT_MESSAGE);
   const [sending, setSending] = useState(false);
   const [testMode, setTestMode] = useState(true);
   const [results, setResults] = useState<SendResult[] | null>(null);
   const [summary, setSummary] = useState<{ sent: number; failed: number } | null>(null);
+
+  // Load saved message on mount
+  useEffect(() => {
+    loadScheduleEmailMessage().then((saved) => {
+      if (saved) {
+        setCustomMessage(saved);
+      }
+    });
+  }, []);
 
   // Get members with their tasks
   const membersWithTasks = useMemo(() => {
@@ -85,6 +95,8 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
       if (response.ok) {
         setResults(data.results);
         setSummary(data.summary);
+        // Save the custom message for next time
+        await saveScheduleEmailMessage(customMessage);
       } else {
         setResults([{ memberName: 'Erreur', success: false, error: data.error }]);
       }

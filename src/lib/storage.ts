@@ -116,6 +116,20 @@ export async function saveReminderLog(log: ReminderLog): Promise<void> {
   await setDoc(doc(db, REMINDERS_COLLECTION, log.id), log);
 }
 
+// Schedule email custom message
+export async function loadScheduleEmailMessage(): Promise<string | null> {
+  const snapshot = await getDocs(collection(db, SETTINGS_COLLECTION));
+  const settingsDoc = snapshot.docs.find(d => d.id === "scheduleEmailMessage");
+  if (settingsDoc) {
+    return settingsDoc.data().message as string;
+  }
+  return null;
+}
+
+export async function saveScheduleEmailMessage(message: string): Promise<void> {
+  await setDoc(doc(db, SETTINGS_COLLECTION, "scheduleEmailMessage"), { message });
+}
+
 export function subscribeToReminderLogs(callback: (logs: ReminderLog[]) => void): Unsubscribe {
   return onSnapshot(collection(db, REMINDERS_COLLECTION), (snapshot) => {
     const logs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ReminderLog));
