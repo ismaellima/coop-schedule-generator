@@ -20,6 +20,7 @@ import { generateSchedule } from "./lib/generator";
 import { MemberList } from "./components/MemberList";
 import { MemberForm } from "./components/MemberForm";
 import { ScheduleTable } from "./components/ScheduleTable";
+import { SendScheduleModal } from "./components/SendScheduleModal";
 
 type View = "schedule" | "members" | "history";
 
@@ -140,6 +141,7 @@ export default function App() {
   const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
   const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([]);
+  const [showSendScheduleModal, setShowSendScheduleModal] = useState(false);
 
   const now = new Date();
   const [startMonth, setStartMonth] = useState(now.getMonth());
@@ -565,16 +567,27 @@ export default function App() {
                     Télécharger PDF
                   </button>
                   {isAdmin && (
-                    <button
-                      onClick={handleSendTestEmail}
-                      disabled={sendingTestEmail}
-                      className="bg-teal-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-600 transition-colors flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      {sendingTestEmail ? 'Envoi...' : 'Tester email rappel'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowSendScheduleModal(true)}
+                        className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Envoyer aux membres
+                      </button>
+                      <button
+                        onClick={handleSendTestEmail}
+                        disabled={sendingTestEmail}
+                        className="bg-teal-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {sendingTestEmail ? 'Envoi...' : 'Tester email rappel'}
+                      </button>
+                    </>
                   )}
                 </div>
                 {testEmailStatus && (
@@ -770,6 +783,15 @@ export default function App() {
         <PasswordModal
           onSuccess={() => { setIsAdmin(true); setShowPasswordModal(false); }}
           onCancel={() => setShowPasswordModal(false)}
+        />
+      )}
+
+      {showSendScheduleModal && schedule && (
+        <SendScheduleModal
+          scheduleTitle={scheduleTitle}
+          weeks={schedule}
+          members={members}
+          onClose={() => setShowSendScheduleModal(false)}
         />
       )}
     </div>
