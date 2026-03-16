@@ -1,7 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 // Test email for development
 const TEST_EMAIL = 'ismaeldf@gmail.com';
@@ -118,8 +124,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const icsBuffer = Buffer.from(icsContent, 'utf-8');
 
       try {
-        const { error } = await resend.emails.send({
-          from: 'Comité d\'entretien <onboarding@resend.dev>',
+        await transporter.sendMail({
+          from: `Comité d'entretien <${process.env.GMAIL_USER}>`,
           replyTo: 'entretiencoopmontagne@gmail.com',
           to: toEmail,
           subject: `Horaire de ménage - ${scheduleTitle}`,
@@ -127,6 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             {
               filename: `horaire-menage-${member.memberName.toLowerCase().replace(/\s+/g, '-')}.ics`,
               content: icsBuffer,
+              contentType: 'text/calendar',
             },
           ],
           html: `
@@ -159,13 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `,
         });
 
-        if (error) {
-          results.push({ memberName: member.memberName, success: false, error: error.message });
-        } else {
-          results.push({ memberName: member.memberName, success: true });
-        }
+        results.push({ memberName: member.memberName, success: true });
       } catch (err) {
-        results.push({ memberName: member.memberName, success: false, error: 'Erreur d\'envoi' });
+        const message = err instanceof Error ? err.message : 'Erreur d\'envoi';
+        results.push({ memberName: member.memberName, success: false, error: message });
       }
 
       // Small delay to avoid rate limiting

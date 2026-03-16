@@ -1,7 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 // Test email for development
 const TEST_EMAIL = 'ismaeldf@gmail.com';
@@ -25,8 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // In test mode, always send to test email
     const toEmail = testMode ? TEST_EMAIL : memberEmail;
 
-    const { data, error } = await resend.emails.send({
-      from: 'Comité d\'entretien <onboarding@resend.dev>',
+    const info = await transporter.sendMail({
+      from: `Comité d'entretien <${process.env.GMAIL_USER}>`,
       replyTo: 'entretiencoopmontagne@gmail.com',
       to: toEmail,
       subject: `Rappel: Ménage ce samedi ${date}`,
@@ -49,12 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `,
     });
 
-    if (error) {
-      console.error('Resend error:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(200).json({ success: true, id: data?.id, sentTo: toEmail });
+    return res.status(200).json({ success: true, id: info.messageId, sentTo: toEmail });
   } catch (error) {
     console.error('Server error:', error);
     return res.status(500).json({ error: 'Failed to send email' });
