@@ -162,11 +162,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
               <table style="border-collapse: collapse;">
                 <tr>
-                  <td style="vertical-align: middle; padding-right: 8px;">
-                    <img src="https://coop-schedule-generator.vercel.app/coop-building.png" alt="Coop au pied de la montagne" style="height: 40px; width: auto; display: block;" />
+                  <td style="vertical-align: middle; padding-right: 14px;">
+                    <img src="https://coop-schedule-generator.vercel.app/coop-building.png" alt="Coop au pied de la montagne" style="height: 52px; width: 52px; object-fit: cover; border-radius: 8px; display: block;" />
                   </td>
-                  <td style="vertical-align: middle; color: #666; font-size: 12px;">
-                    Coop au pied de la montagne — Comité d'entretien
+                  <td style="vertical-align: middle; padding-right: 14px;">
+                    <div style="width: 2px; height: 44px; background-color: #f97316; border-radius: 2px;"></div>
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <div style="font-weight: 700; font-size: 14px; color: #1a1a1a; margin-bottom: 3px;">Coop au pied de la montagne</div>
+                    <div style="font-size: 12px; color: #888;">Comité d'entretien</div>
                   </td>
                 </tr>
               </table>
