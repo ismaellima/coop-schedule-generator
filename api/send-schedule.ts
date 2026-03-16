@@ -160,9 +160,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               <p>Merci de votre collaboration!</p>
 
               <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
-              <p style="color: #666; font-size: 12px;">
-                Coop au pied de la montagne — Comité d'entretien
-              </p>
+              <table style="border-collapse: collapse;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 8px;">
+                    <img src="https://coop-schedule-generator.vercel.app/coop-building.png" alt="Coop au pied de la montagne" style="height: 40px; width: auto; display: block;" />
+                  </td>
+                  <td style="vertical-align: middle; color: #666; font-size: 12px;">
+                    Coop au pied de la montagne — Comité d'entretien
+                  </td>
+                </tr>
+              </table>
               ${testMode ? '<p style="color: #f97316; font-size: 12px;"><strong>MODE TEST</strong> - Cet email a été envoyé à l\'adresse de test.</p>' : ''}
             </div>
           `,
