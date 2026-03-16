@@ -12,7 +12,6 @@ import {
   loadEmailRemindersEnabled,
   saveEmailRemindersEnabled,
   subscribeToEmailReminders,
-  saveReminderLog,
   subscribeToReminderLogs
 } from "./lib/storage";
 import { getDefaultMembers } from "./lib/defaultMembers";
@@ -137,8 +136,6 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [sendingTestEmail, setSendingTestEmail] = useState(false);
-  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
   const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([]);
   const [showSendScheduleModal, setShowSendScheduleModal] = useState(false);
@@ -290,59 +287,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSendTestEmail = async () => {
-    setSendingTestEmail(true);
-    setTestEmailStatus(null);
-    const testData = {
-      memberName: 'Ismael (Test)',
-      memberEmail: 'ismaeldf@gmail.com',
-      task: 'Balayeuse - Rez-de-chaussée',
-      date: '8 février',
-      testMode: true,
-    };
-    try {
-      const response = await fetch('/api/send-reminder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testData),
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setTestEmailStatus('Email envoyé avec succès!');
-      } else {
-        setTestEmailStatus(`Erreur: ${data.error}`);
-      }
-
-      // Log the reminder (best-effort, don't let failures affect UI)
-      const log: ReminderLog = {
-        id: crypto.randomUUID(),
-        memberName: testData.memberName,
-        memberEmail: testData.memberEmail,
-        task: testData.task,
-        scheduledDate: testData.date,
-        sentAt: new Date().toISOString(),
-        success: response.ok,
-        error: response.ok ? undefined : data.error,
-      };
-      saveReminderLog(log).catch(console.error);
-    } catch (error) {
-      setTestEmailStatus('Erreur de connexion');
-      // Log the failed attempt (best-effort)
-      const log: ReminderLog = {
-        id: crypto.randomUUID(),
-        memberName: testData.memberName,
-        memberEmail: testData.memberEmail,
-        task: testData.task,
-        scheduledDate: testData.date,
-        sentAt: new Date().toISOString(),
-        success: false,
-        error: 'Erreur de connexion',
-      };
-      saveReminderLog(log).catch(console.error);
-    }
-    setSendingTestEmail(false);
-  };
 
   const handleToggleEmailReminders = async () => {
     const newValue = !emailRemindersEnabled;
@@ -577,24 +521,10 @@ export default function App() {
                         </svg>
                         Envoyer aux membres
                       </button>
-                      <button
-                        onClick={handleSendTestEmail}
-                        disabled={sendingTestEmail}
-                        className="bg-teal-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-600 transition-colors flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        {sendingTestEmail ? 'Envoi...' : 'Tester email rappel'}
-                      </button>
+
                     </>
                   )}
                 </div>
-                {testEmailStatus && (
-                  <p className={`text-sm ${testEmailStatus.includes('succès') ? 'text-green-600' : 'text-red-600'}`}>
-                    {testEmailStatus}
-                  </p>
-                )}
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
