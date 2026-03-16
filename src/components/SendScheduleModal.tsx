@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Member, WeekAssignment } from "../lib/types";
 import { getMemberTasks } from "../lib/icsGenerator";
-import { loadScheduleEmailMessage, saveScheduleEmailMessage } from "../lib/storage";
+import { loadScheduleEmailMessage, saveScheduleEmailMessage, loadScheduleEmailSubject, saveScheduleEmailSubject } from "../lib/storage";
 
 interface Props {
   scheduleTitle: string;
@@ -20,17 +20,19 @@ const DEFAULT_MESSAGE = "Voici l'horaire de ménage pour les prochaines semaines
 
 export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Props) {
   const [customMessage, setCustomMessage] = useState(DEFAULT_MESSAGE);
+  const [emailSubject, setEmailSubject] = useState(`Horaire de ménage - ${scheduleTitle}`);
   const [sending, setSending] = useState(false);
   const [testMode, setTestMode] = useState(true);
   const [results, setResults] = useState<SendResult[] | null>(null);
   const [summary, setSummary] = useState<{ sent: number; failed: number } | null>(null);
 
-  // Load saved message on mount
+  // Load saved message and subject on mount
   useEffect(() => {
     loadScheduleEmailMessage().then((saved) => {
-      if (saved) {
-        setCustomMessage(saved);
-      }
+      if (saved) setCustomMessage(saved);
+    });
+    loadScheduleEmailSubject().then((saved) => {
+      if (saved) setEmailSubject(saved);
     });
   }, []);
 
@@ -84,6 +86,7 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scheduleTitle,
+          emailSubject,
           customMessage,
           members: selectedMembers,
           testMode,
@@ -95,8 +98,9 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
       if (response.ok) {
         setResults(data.results);
         setSummary(data.summary);
-        // Save the custom message for next time
+        // Save message and subject for next time
         await saveScheduleEmailMessage(customMessage);
+        saveScheduleEmailSubject(emailSubject).catch(console.error);
       } else {
         setResults([{ memberName: 'Erreur', success: false, error: data.error }]);
       }
@@ -131,6 +135,20 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Subject input */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Titre de l'email
+            </label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-orange-400 outline-none transition-colors text-gray-900 placeholder-gray-400"
+              placeholder="Titre de l'email..."
+            />
+          </div>
+
           {/* Message input */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">

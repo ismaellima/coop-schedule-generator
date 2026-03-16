@@ -23,6 +23,7 @@ interface MemberSchedule {
 
 interface ScheduleRequest {
   scheduleTitle: string;
+  emailSubject?: string;
   customMessage: string;
   members: MemberSchedule[];
   testMode?: boolean;
@@ -103,7 +104,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { scheduleTitle, customMessage, members, testMode } = req.body as ScheduleRequest;
+    const { scheduleTitle, emailSubject, customMessage, members, testMode } = req.body as ScheduleRequest;
+    const subject = emailSubject || `Horaire de ménage - ${scheduleTitle}`;
 
     const results: { memberName: string; success: boolean; error?: string }[] = [];
 
@@ -128,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           from: `Comité d'entretien <${process.env.GMAIL_USER}>`,
           replyTo: 'entretiencoopmontagne@gmail.com',
           to: toEmail,
-          subject: `Horaire de ménage - ${scheduleTitle}`,
+          subject,
           attachments: [
             {
               filename: `horaire-menage-${member.memberName.toLowerCase().replace(/\s+/g, '-')}.ics`,
