@@ -308,7 +308,13 @@ export default function App() {
       });
       const data = await response.json();
 
-      // Log the reminder
+      if (response.ok) {
+        setTestEmailStatus('Email envoyé avec succès!');
+      } else {
+        setTestEmailStatus(`Erreur: ${data.error}`);
+      }
+
+      // Log the reminder (best-effort, don't let failures affect UI)
       const log: ReminderLog = {
         id: crypto.randomUUID(),
         memberName: testData.memberName,
@@ -319,15 +325,10 @@ export default function App() {
         success: response.ok,
         error: response.ok ? undefined : data.error,
       };
-      await saveReminderLog(log);
-
-      if (response.ok) {
-        setTestEmailStatus('Email envoyé avec succès!');
-      } else {
-        setTestEmailStatus(`Erreur: ${data.error}`);
-      }
+      saveReminderLog(log).catch(console.error);
     } catch (error) {
-      // Log the failed attempt
+      setTestEmailStatus('Erreur de connexion');
+      // Log the failed attempt (best-effort)
       const log: ReminderLog = {
         id: crypto.randomUUID(),
         memberName: testData.memberName,
@@ -338,8 +339,7 @@ export default function App() {
         success: false,
         error: 'Erreur de connexion',
       };
-      await saveReminderLog(log);
-      setTestEmailStatus('Erreur de connexion');
+      saveReminderLog(log).catch(console.error);
     }
     setSendingTestEmail(false);
   };
