@@ -56,8 +56,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 <div style="width: 2px; height: 44px; background-color: #f97316; border-radius: 2px;"></div>
               </td>
               <td style="vertical-align: middle;">
-                <div style="font-weight: 700; font-size: 14px; color: #1a1a1a; margin-bottom: 3px;">Coop au pied de la montagne</div>
-                <div style="font-size: 12px; color: #888;">Comité d'entretien</div>
+                <div style="font-weight: 700; font-size: 14px; color: #1a1a1a; margin-bottom: 3px;">Comité d'entretien</div>
+                <div style="font-size: 12px; color: #888;">Coop au pied de la montagne</div>
               </td>
             </tr>
           </table>
