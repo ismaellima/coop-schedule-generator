@@ -404,15 +404,15 @@ export default function App() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <button onClick={() => setView("schedule")} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
               <CalendarIcon className="w-5 h-5 text-orange-600" />
             </div>
-            <div>
+            <div className="text-left">
               <h1 className="text-lg font-bold text-gray-900">Coop au pied de la montagne</h1>
               <p className="text-xs text-gray-400">Générateur d'horaires de ménage</p>
             </div>
-          </div>
+          </button>
           <div className="flex items-center gap-3">
             <nav className="flex border border-gray-200 rounded-lg overflow-hidden">
               <button
