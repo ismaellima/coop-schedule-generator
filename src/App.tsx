@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Member, WeekAssignment, SavedSchedule, ReminderLog } from "./lib/types";
+import type { Member, WeekAssignment, SavedSchedule } from "./lib/types";
 import {
   loadMembers,
   saveMembers,
@@ -9,10 +9,6 @@ import {
   deleteSchedule,
   loadAssignmentCounts,
   saveAssignmentCounts,
-  loadEmailRemindersEnabled,
-  saveEmailRemindersEnabled,
-  subscribeToEmailReminders,
-  subscribeToReminderLogs
 } from "./lib/storage";
 import { getDefaultMembers } from "./lib/defaultMembers";
 import { generateSchedule } from "./lib/generator";
@@ -22,7 +18,7 @@ import { MemberForm } from "./components/MemberForm";
 import { ScheduleTable } from "./components/ScheduleTable";
 import { SendScheduleModal } from "./components/SendScheduleModal";
 
-type View = "schedule" | "members" | "history";
+type View = "schedule" | "members";
 
 const ADMIN_PASSWORD = "aupieddelamontagne";
 
@@ -178,8 +174,6 @@ export default function App() {
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
-  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([]);
   const [showSendScheduleModal, setShowSendScheduleModal] = useState(false);
 
   const now = new Date();
@@ -196,15 +190,12 @@ export default function App() {
   useEffect(() => {
     let unsubMembers: (() => void) | undefined;
     let unsubSchedules: (() => void) | undefined;
-    let unsubEmailReminders: (() => void) | undefined;
-    let unsubReminderLogs: (() => void) | undefined;
 
     async function init() {
       // Load initial data
-      const [loadedMembers, loadedCounts, loadedEmailReminders] = await Promise.all([
+      const [loadedMembers, loadedCounts] = await Promise.all([
         loadMembers(),
         loadAssignmentCounts(),
-        loadEmailRemindersEnabled()
       ]);
 
       // If no members exist, initialize with defaults
@@ -217,7 +208,6 @@ export default function App() {
       }
 
       setAssignmentCounts(loadedCounts);
-      setEmailRemindersEnabled(loadedEmailReminders);
       setLoading(false);
 
       // Subscribe to real-time updates
@@ -228,14 +218,6 @@ export default function App() {
       unsubSchedules = subscribeToSchedules((updated) => {
         setSavedSchedules(updated);
       });
-
-      unsubEmailReminders = subscribeToEmailReminders((enabled) => {
-        setEmailRemindersEnabled(enabled);
-      });
-
-      unsubReminderLogs = subscribeToReminderLogs((logs) => {
-        setReminderLogs(logs);
-      });
     }
 
     init();
@@ -244,8 +226,6 @@ export default function App() {
     return () => {
       if (unsubMembers) unsubMembers();
       if (unsubSchedules) unsubSchedules();
-      if (unsubEmailReminders) unsubEmailReminders();
-      if (unsubReminderLogs) unsubReminderLogs();
     };
   }, []);
 
@@ -330,12 +310,6 @@ export default function App() {
   };
 
 
-  const handleToggleEmailReminders = async () => {
-    const newValue = !emailRemindersEnabled;
-    setEmailRemindersEnabled(newValue);
-    await saveEmailRemindersEnabled(newValue);
-  };
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -380,45 +354,7 @@ export default function App() {
                 </svg>
                 Membres
               </button>
-              <button
-                onClick={() => setView("history")}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${
-                  view === "history" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Historique
-              </button>
             </nav>
-            {isAdmin && (
-              <button
-                onClick={handleToggleEmailReminders}
-                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  emailRemindersEnabled
-                    ? "bg-teal-100 text-teal-700 hover:bg-teal-200"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                }`}
-                title={emailRemindersEnabled ? "Rappels activés" : "Rappels désactivés"}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="hidden sm:inline">{emailRemindersEnabled ? "Rappels ON" : "Rappels OFF"}</span>
-                <span
-                  className={`w-8 h-5 rounded-full relative transition-colors ${
-                    emailRemindersEnabled ? "bg-teal-500" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                      emailRemindersEnabled ? "translate-x-3" : ""
-                    }`}
-                  />
-                </span>
-              </button>
-            )}
             {isAdmin ? (
               <button
                 onClick={() => { sessionStorage.removeItem("coop-admin"); setIsAdmin(false); }}
@@ -665,80 +601,6 @@ export default function App() {
           </div>
         )}
 
-        {view === "history" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">
-                Historique des rappels ({reminderLogs.length})
-              </h2>
-            </div>
-            {reminderLogs.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <p className="text-lg font-semibold text-gray-700">Aucun rappel envoyé</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Les rappels envoyés apparaîtront ici.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Membre</th>
-                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Tâche</th>
-                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Date prévue</th>
-                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Envoyé le</th>
-                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {reminderLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-gray-900">{log.memberName}</p>
-                            <p className="text-xs text-gray-400">{log.memberEmail}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{log.task}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{log.scheduledDate}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {new Date(log.sentAt).toLocaleDateString("fr-CA", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td className="px-4 py-3">
-                          {log.success ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                              <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                              </svg>
-                              Envoyé
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700" title={log.error}>
-                              <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-                              </svg>
-                              Échec
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
       </main>
 
       {viewingMember && (

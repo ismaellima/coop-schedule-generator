@@ -8,13 +8,12 @@ import {
   type Unsubscribe
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Member, SavedSchedule, ReminderLog } from "./types";
+import type { Member, SavedSchedule } from "./types";
 
 // Collections
 const MEMBERS_COLLECTION = "members";
 const SCHEDULES_COLLECTION = "schedules";
 const SETTINGS_COLLECTION = "settings";
-const REMINDERS_COLLECTION = "reminders";
 
 // Members
 export async function loadMembers(): Promise<Member[]> {
@@ -87,35 +86,6 @@ export async function saveAssignmentCounts(counts: Record<string, number>): Prom
   await setDoc(doc(db, SETTINGS_COLLECTION, "assignmentCounts"), { counts });
 }
 
-// Email reminders setting
-export async function loadEmailRemindersEnabled(): Promise<boolean> {
-  const snapshot = await getDocs(collection(db, SETTINGS_COLLECTION));
-  const settingsDoc = snapshot.docs.find(d => d.id === "emailReminders");
-  if (settingsDoc) {
-    return settingsDoc.data().enabled as boolean;
-  }
-  return false; // Default to disabled
-}
-
-export async function saveEmailRemindersEnabled(enabled: boolean): Promise<void> {
-  await setDoc(doc(db, SETTINGS_COLLECTION, "emailReminders"), { enabled });
-}
-
-export function subscribeToEmailReminders(callback: (enabled: boolean) => void): Unsubscribe {
-  return onSnapshot(doc(db, SETTINGS_COLLECTION, "emailReminders"), (snapshot) => {
-    if (snapshot.exists()) {
-      callback(snapshot.data().enabled as boolean);
-    } else {
-      callback(false);
-    }
-  });
-}
-
-// Reminder logs
-export async function saveReminderLog(log: ReminderLog): Promise<void> {
-  await setDoc(doc(db, REMINDERS_COLLECTION, log.id), log);
-}
-
 // Schedule email custom message
 export async function loadScheduleEmailMessage(): Promise<string | null> {
   const snapshot = await getDocs(collection(db, SETTINGS_COLLECTION));
@@ -144,11 +114,3 @@ export async function saveScheduleEmailSubject(subject: string): Promise<void> {
   await setDoc(doc(db, SETTINGS_COLLECTION, "scheduleEmailSubject"), { subject });
 }
 
-export function subscribeToReminderLogs(callback: (logs: ReminderLog[]) => void): Unsubscribe {
-  return onSnapshot(collection(db, REMINDERS_COLLECTION), (snapshot) => {
-    const logs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ReminderLog));
-    // Sort by sentAt descending (newest first)
-    logs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-    callback(logs);
-  });
-}

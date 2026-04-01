@@ -47,13 +47,3 @@ export interface SavedSchedule {
   createdAt: string; // ISO date string
 }
 
-export interface ReminderLog {
-  id: string;
-  memberName: string;
-  memberEmail: string;
-  task: string;
-  scheduledDate: string;
-  sentAt: string; // ISO date string
-  success: boolean;
-  error?: string;
-}

@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"interface\\\\|type\\\\|function\" /Users/ismael/Documents/coop-schedule-generator/src/lib/*.ts)",
+      "Bash(npm install:*)",
+      "Bash(npm --version)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(source \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm ls:*)",
+      "Bash(nvm use:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(export NVM_DIR=$HOME/.nvm)",
+      "Bash(source $NVM_DIR/nvm.sh)",
+      "Bash(npx vercel:*)",
+      "Bash(source ~/.zshrc)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node --version)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/npx vercel --version)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/npx vercel whoami)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/npx vercel logs --limit 20)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/npx tsc --noEmit --project tsconfig.node.json)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/npx tsc@5 --noEmit -p tsconfig.node.json)",
+      "Bash(gh run:*)",
+      "Bash(find /Users/ismael/Documents/coop-schedule-generator/src -type f \\\\\\(-name *.tsx -o -name *.ts \\\\\\))",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/ismael/.nvm/**)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node ~/.nvm/versions/node/v20.20.0/bin/tsc --version)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/npx tsc:*)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node /Users/ismael/Documents/coop-schedule-generator/node_modules/.bin/tsc --noEmit)",
+      "Bash(~/.nvm/versions/node/v20.20.0/bin/node -e \":*)",
+      "Bash(xargs ls:*)"
+    ]
+  }
+}
