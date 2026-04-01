@@ -8,12 +8,13 @@ import {
   type Unsubscribe
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Member, SavedSchedule } from "./types";
+import type { Member, SavedSchedule, SendLog } from "./types";
 
 // Collections
 const MEMBERS_COLLECTION = "members";
 const SCHEDULES_COLLECTION = "schedules";
 const SETTINGS_COLLECTION = "settings";
+const SEND_LOGS_COLLECTION = "sendLogs";
 
 // Members
 export async function loadMembers(): Promise<Member[]> {
@@ -112,5 +113,18 @@ export async function loadScheduleEmailSubject(): Promise<string | null> {
 
 export async function saveScheduleEmailSubject(subject: string): Promise<void> {
   await setDoc(doc(db, SETTINGS_COLLECTION, "scheduleEmailSubject"), { subject });
+}
+
+// Send logs
+export async function saveSendLog(log: SendLog): Promise<void> {
+  await setDoc(doc(db, SEND_LOGS_COLLECTION, log.id), log);
+}
+
+export function subscribeToSendLogs(callback: (logs: SendLog[]) => void): Unsubscribe {
+  return onSnapshot(collection(db, SEND_LOGS_COLLECTION), (snapshot) => {
+    const logs = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as SendLog));
+    logs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+    callback(logs);
+  });
 }
 

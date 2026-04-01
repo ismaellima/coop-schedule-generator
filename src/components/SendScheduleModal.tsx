@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Member, WeekAssignment } from "../lib/types";
 import { getMemberTasks } from "../lib/icsGenerator";
-import { loadScheduleEmailMessage, saveScheduleEmailMessage, loadScheduleEmailSubject, saveScheduleEmailSubject } from "../lib/storage";
+import { loadScheduleEmailMessage, saveScheduleEmailMessage, loadScheduleEmailSubject, saveScheduleEmailSubject, saveSendLog } from "../lib/storage";
+import type { SendLog } from "../lib/types";
 
 interface Props {
   scheduleTitle: string;
@@ -101,6 +102,20 @@ export function SendScheduleModal({ scheduleTitle, weeks, members, onClose }: Pr
         // Save message and subject for next time
         await saveScheduleEmailMessage(customMessage);
         saveScheduleEmailSubject(emailSubject).catch(console.error);
+        // Save send log
+        const log: SendLog = {
+          id: crypto.randomUUID(),
+          sentAt: new Date().toISOString(),
+          scheduleTitle,
+          testMode,
+          sentCount: data.summary.sent,
+          failedCount: data.summary.failed,
+          recipients: (data.results as { memberName: string; success: boolean; error?: string }[]).map((r) => {
+            const member = selectedMembers.find(m => m.memberName === r.memberName);
+            return { name: r.memberName, email: member?.memberEmail ?? '', success: r.success, error: r.error };
+          }),
+        };
+        saveSendLog(log).catch(console.error);
       } else {
         setResults([{ memberName: 'Erreur', success: false, error: data.error }]);
       }

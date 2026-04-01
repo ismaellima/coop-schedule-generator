@@ -47,3 +47,20 @@ export interface SavedSchedule {
   createdAt: string; // ISO date string
 }
 
+export interface SendLogRecipient {
+  name: string;
+  email: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface SendLog {
+  id: string;
+  sentAt: string;         // ISO date string
+  scheduleTitle: string;
+  testMode: boolean;
+  sentCount: number;
+  failedCount: number;
+  recipients: SendLogRecipient[];
+}
+

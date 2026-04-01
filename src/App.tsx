@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Member, WeekAssignment, SavedSchedule } from "./lib/types";
+import type { Member, WeekAssignment, SavedSchedule, SendLog } from "./lib/types";
 import {
   loadMembers,
   saveMembers,
@@ -9,6 +9,7 @@ import {
   deleteSchedule,
   loadAssignmentCounts,
   saveAssignmentCounts,
+  subscribeToSendLogs,
 } from "./lib/storage";
 import { getDefaultMembers } from "./lib/defaultMembers";
 import { generateSchedule } from "./lib/generator";
@@ -18,7 +19,7 @@ import { MemberForm } from "./components/MemberForm";
 import { ScheduleTable } from "./components/ScheduleTable";
 import { SendScheduleModal } from "./components/SendScheduleModal";
 
-type View = "schedule" | "members";
+type View = "schedule" | "members" | "history";
 
 const ADMIN_PASSWORD = "aupieddelamontagne";
 
@@ -165,6 +166,72 @@ function PasswordModal({ onSuccess, onCancel }: { onSuccess: () => void; onCance
   );
 }
 
+function SendLogCard({ log }: { log: SendLog }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-4 p-4 text-left hover:bg-gray-50 transition-colors"
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${log.failedCount === 0 ? "bg-green-100" : "bg-amber-100"}`}>
+          <svg className={`w-5 h-5 ${log.failedCount === 0 ? "text-green-600" : "text-amber-600"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-gray-900">{log.scheduleTitle}</span>
+            {log.testMode && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Test</span>
+            )}
+          </div>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {new Date(log.sentAt).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm font-medium text-green-700">{log.sentCount} envoyé{log.sentCount !== 1 ? "s" : ""}</span>
+          {log.failedCount > 0 && (
+            <span className="text-sm font-medium text-red-600">{log.failedCount} échec{log.failedCount !== 1 ? "s" : ""}</span>
+          )}
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+          </svg>
+        </div>
+      </button>
+      {expanded && (
+        <div className="border-t border-gray-100 divide-y divide-gray-100">
+          {log.recipients.map((r, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800">{r.name}</p>
+                <p className="text-xs text-gray-400">{r.email}</p>
+              </div>
+              {r.success ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                  </svg>
+                  Envoyé
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full" title={r.error}>
+                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                  </svg>
+                  Échec
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("schedule");
@@ -175,6 +242,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSendScheduleModal, setShowSendScheduleModal] = useState(false);
+  const [sendLogs, setSendLogs] = useState<SendLog[]>([]);
 
   const now = new Date();
   const [startMonth, setStartMonth] = useState(now.getMonth());
@@ -190,6 +258,7 @@ export default function App() {
   useEffect(() => {
     let unsubMembers: (() => void) | undefined;
     let unsubSchedules: (() => void) | undefined;
+    let unsubSendLogs: (() => void) | undefined;
 
     async function init() {
       // Load initial data
@@ -218,6 +287,10 @@ export default function App() {
       unsubSchedules = subscribeToSchedules((updated) => {
         setSavedSchedules(updated);
       });
+
+      unsubSendLogs = subscribeToSendLogs((logs) => {
+        setSendLogs(logs);
+      });
     }
 
     init();
@@ -226,6 +299,7 @@ export default function App() {
     return () => {
       if (unsubMembers) unsubMembers();
       if (unsubSchedules) unsubSchedules();
+      if (unsubSendLogs) unsubSendLogs();
     };
   }, []);
 
@@ -353,6 +427,17 @@ export default function App() {
                   <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 Membres
+              </button>
+              <button
+                onClick={() => setView("history")}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${
+                  view === "history" ? "bg-white text-gray-900 shadow-sm" : "bg-gray-50 text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Historique
               </button>
             </nav>
             {isAdmin ? (
@@ -598,6 +683,29 @@ export default function App() {
               isAdmin={isAdmin}
               taskCounts={computeFutureTaskCounts(savedSchedules)}
             />
+          </div>
+        )}
+
+        {view === "history" && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              Historique des envois ({sendLogs.length})
+            </h2>
+            {sendLogs.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="text-lg font-semibold text-gray-700">Aucun envoi enregistré</p>
+                <p className="text-sm text-gray-400 mt-1">Les envois de calendrier apparaîtront ici.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sendLogs.map((log) => (
+                  <SendLogCard key={log.id} log={log} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
