@@ -6,6 +6,7 @@ interface Props {
   onEdit: (member: Member) => void;
   onDelete: (id: string) => void;
   isAdmin?: boolean;
+  taskCounts?: Record<string, number>;
 }
 
 const FLOOR_DOT_COLOR: Record<Floor, string> = {
@@ -56,7 +57,7 @@ function TrashIcon() {
   );
 }
 
-export function MemberList({ members, onEdit, onDelete, isAdmin = false }: Props) {
+export function MemberList({ members, onEdit, onDelete, isAdmin = false, taskCounts = {} }: Props) {
   if (members.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -114,7 +115,7 @@ export function MemberList({ members, onEdit, onDelete, isAdmin = false }: Props
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FLOOR_BADGE_STYLE[getAssignedFloor(m)]}`}>
                           {FLOOR_SHORT[getAssignedFloor(m)]}
                         </span>
-                        <span className="text-xs text-gray-400">0 tâches assignées</span>
+                        <span className="text-xs text-gray-400">{taskCounts[m.name] ?? 0} tâche{(taskCounts[m.name] ?? 0) !== 1 ? "s" : ""} assignée{(taskCounts[m.name] ?? 0) !== 1 ? "s" : ""}</span>
                       </div>
                     </div>
                     {isAdmin && (

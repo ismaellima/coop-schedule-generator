@@ -25,6 +25,46 @@ type View = "schedule" | "members" | "history";
 
 const ADMIN_PASSWORD = "aupieddelamontagne";
 
+const MONTH_MAP: Record<string, number> = {
+  "janvier": 0, "février": 1, "fevrier": 1, "mars": 2, "avril": 3,
+  "mai": 4, "juin": 5, "juillet": 6, "août": 7, "aout": 7,
+  "septembre": 8, "octobre": 9, "novembre": 10, "décembre": 11, "decembre": 11,
+};
+
+function parseFrenchDate(dateStr: string, year: number): Date | null {
+  const match = dateStr.toLowerCase().match(/(\d+)\s+(\w+)/);
+  if (!match) return null;
+  const month = MONTH_MAP[match[2]];
+  if (month === undefined) return null;
+  return new Date(year, month, parseInt(match[1], 10));
+}
+
+function computeFutureTaskCounts(schedules: SavedSchedule[]): Record<string, number> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const counts: Record<string, number> = {};
+
+  for (const schedule of schedules) {
+    const year = new Date(schedule.createdAt).getFullYear();
+    for (const week of schedule.weeks) {
+      const date = parseFrenchDate(week.date, year);
+      if (!date || date < today) continue;
+      const assignees = [
+        week.balayeuseSousSol,
+        week.balayeuseRezDeChaussee,
+        week.balayeuse1erEtage,
+        week.vadrouilleAvant,
+        week.vadrouilleArriere,
+      ];
+      for (const name of assignees) {
+        if (name) counts[name] = (counts[name] ?? 0) + 1;
+      }
+    }
+  }
+
+  return counts;
+}
+
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(2026, i).toLocaleDateString("fr-CA", { month: "long" }),
@@ -617,6 +657,7 @@ export default function App() {
               }}
               onDelete={handleDelete}
               isAdmin={isAdmin}
+              taskCounts={computeFutureTaskCounts(savedSchedules)}
             />
           </div>
         )}
