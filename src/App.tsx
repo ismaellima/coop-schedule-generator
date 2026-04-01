@@ -17,6 +17,7 @@ import {
 import { getDefaultMembers } from "./lib/defaultMembers";
 import { generateSchedule } from "./lib/generator";
 import { MemberList } from "./components/MemberList";
+import { MemberDetailModal } from "./components/MemberDetailModal";
 import { MemberForm } from "./components/MemberForm";
 import { ScheduleTable } from "./components/ScheduleTable";
 import { SendScheduleModal } from "./components/SendScheduleModal";
@@ -174,6 +175,7 @@ export default function App() {
   const [members, setMembers] = useState<Member[]>([]);
   const [editing, setEditing] = useState<Member | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("coop-admin") === "true");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
@@ -651,6 +653,7 @@ export default function App() {
             </div>
             <MemberList
               members={members}
+              onView={(m) => setViewingMember(m)}
               onEdit={(m) => {
                 setEditing(m);
                 setShowForm(true);
@@ -737,6 +740,21 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {viewingMember && (
+        <MemberDetailModal
+          member={viewingMember}
+          allMembers={members}
+          schedules={savedSchedules}
+          isAdmin={isAdmin}
+          onEdit={() => {
+            setEditing(viewingMember);
+            setViewingMember(null);
+            setShowForm(true);
+          }}
+          onClose={() => setViewingMember(null)}
+        />
+      )}
 
       {showForm && (
         <MemberForm

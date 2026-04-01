@@ -3,6 +3,7 @@ import { ALL_FLOORS } from "../lib/types";
 
 interface Props {
   members: Member[];
+  onView: (member: Member) => void;
   onEdit: (member: Member) => void;
   onDelete: (id: string) => void;
   isAdmin?: boolean;
@@ -57,7 +58,7 @@ function TrashIcon() {
   );
 }
 
-export function MemberList({ members, onEdit, onDelete, isAdmin = false, taskCounts = {} }: Props) {
+export function MemberList({ members, onView, onEdit, onDelete, isAdmin = false, taskCounts = {} }: Props) {
   if (members.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -95,7 +96,8 @@ export function MemberList({ members, onEdit, onDelete, isAdmin = false, taskCou
                 return (
                   <div
                     key={m.id}
-                    className={`bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 ${
+                    onClick={() => onView(m)}
+                    className={`bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 cursor-pointer hover:border-orange-300 hover:shadow-sm transition-all ${
                       hasPair ? "border-l-4 border-l-orange-400" : ""
                     } ${!m.active ? "opacity-50" : ""}`}
                   >
@@ -119,7 +121,7 @@ export function MemberList({ members, onEdit, onDelete, isAdmin = false, taskCou
                       </div>
                     </div>
                     {isAdmin && (
-                      <div className="flex gap-2 text-gray-400">
+                      <div className="flex gap-2 text-gray-400" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => onEdit(m)} className="hover:text-gray-600 transition-colors" title="Modifier">
                           <EditIcon />
                         </button>
