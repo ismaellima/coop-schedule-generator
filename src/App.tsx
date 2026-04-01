@@ -372,6 +372,11 @@ export default function App() {
     saveSchedule(pending).catch(console.error);
   }, [savedSchedules, automationEnabled, automationChecked, isAdmin, members]);
 
+  // Reset the checked flag when members change so the automation re-runs with the updated roster
+  useEffect(() => {
+    setAutomationChecked(false);
+  }, [members]);
+
   const persist = useCallback(async (updated: Member[]) => {
     setMembers(updated);
     await saveMembers(updated);
