@@ -115,6 +115,23 @@ export async function saveScheduleEmailSubject(subject: string): Promise<void> {
   await setDoc(doc(db, SETTINGS_COLLECTION, "scheduleEmailSubject"), { subject });
 }
 
+// Automation setting
+export async function loadAutomationEnabled(): Promise<boolean> {
+  const snapshot = await getDocs(collection(db, SETTINGS_COLLECTION));
+  const settingsDoc = snapshot.docs.find(d => d.id === "automationEnabled");
+  return settingsDoc ? (settingsDoc.data().enabled as boolean) : false;
+}
+
+export async function saveAutomationEnabled(enabled: boolean): Promise<void> {
+  await setDoc(doc(db, SETTINGS_COLLECTION, "automationEnabled"), { enabled });
+}
+
+export function subscribeToAutomationEnabled(callback: (enabled: boolean) => void): Unsubscribe {
+  return onSnapshot(doc(db, SETTINGS_COLLECTION, "automationEnabled"), (snap) => {
+    callback(snap.exists() ? (snap.data()?.enabled as boolean) : false);
+  });
+}
+
 // Send logs
 export async function saveSendLog(log: SendLog): Promise<void> {
   await setDoc(doc(db, SEND_LOGS_COLLECTION, log.id), log);

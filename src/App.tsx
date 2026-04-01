@@ -10,6 +10,10 @@ import {
   loadAssignmentCounts,
   saveAssignmentCounts,
   subscribeToSendLogs,
+  saveSendLog,
+  loadAutomationEnabled,
+  saveAutomationEnabled,
+  subscribeToAutomationEnabled,
 } from "./lib/storage";
 import { getDefaultMembers } from "./lib/defaultMembers";
 import { generateSchedule } from "./lib/generator";
@@ -18,6 +22,7 @@ import { MemberDetailModal } from "./components/MemberDetailModal";
 import { MemberForm } from "./components/MemberForm";
 import { ScheduleTable } from "./components/ScheduleTable";
 import { SendScheduleModal } from "./components/SendScheduleModal";
+import { PendingScheduleBanner } from "./components/PendingScheduleBanner";
 
 type View = "schedule" | "members" | "history";
 
@@ -253,18 +258,22 @@ export default function App() {
   const [savedSchedules, setSavedSchedules] = useState<SavedSchedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
+  const [automationEnabled, setAutomationEnabled] = useState(false);
+  const [automationChecked, setAutomationChecked] = useState(false);
 
   // Initial load and real-time subscriptions
   useEffect(() => {
     let unsubMembers: (() => void) | undefined;
     let unsubSchedules: (() => void) | undefined;
     let unsubSendLogs: (() => void) | undefined;
+    let unsubAutomation: (() => void) | undefined;
 
     async function init() {
       // Load initial data
-      const [loadedMembers, loadedCounts] = await Promise.all([
+      const [loadedMembers, loadedCounts, loadedAutomation] = await Promise.all([
         loadMembers(),
         loadAssignmentCounts(),
+        loadAutomationEnabled(),
       ]);
 
       // If no members exist, initialize with defaults
@@ -277,6 +286,7 @@ export default function App() {
       }
 
       setAssignmentCounts(loadedCounts);
+      setAutomationEnabled(loadedAutomation);
       setLoading(false);
 
       // Subscribe to real-time updates
@@ -291,6 +301,10 @@ export default function App() {
       unsubSendLogs = subscribeToSendLogs((logs) => {
         setSendLogs(logs);
       });
+
+      unsubAutomation = subscribeToAutomationEnabled((enabled) => {
+        setAutomationEnabled(enabled);
+      });
     }
 
     init();
@@ -300,15 +314,63 @@ export default function App() {
       if (unsubMembers) unsubMembers();
       if (unsubSchedules) unsubSchedules();
       if (unsubSendLogs) unsubSendLogs();
+      if (unsubAutomation) unsubAutomation();
     };
   }, []);
 
+  const pendingSchedule = isAdmin ? (savedSchedules.find(s => s.status === 'pending') ?? null) : null;
+  const nonPendingSchedules = savedSchedules.filter(s => s.status !== 'pending');
+
   // Auto-select the most recent saved schedule when none is selected
   useEffect(() => {
-    if (savedSchedules.length > 0 && selectedScheduleId === null && schedule === null) {
-      handleSelectSchedule(savedSchedules[0]);
+    if (nonPendingSchedules.length > 0 && selectedScheduleId === null && schedule === null) {
+      handleSelectSchedule(nonPendingSchedules[0]);
     }
   }, [savedSchedules]);
+
+  // Automation check: generate next schedule when current one is within 7 days of ending
+  useEffect(() => {
+    if (!isAdmin || !automationEnabled || automationChecked || members.length === 0) return;
+    if (savedSchedules.length === 0) return;
+    setAutomationChecked(true);
+
+    const hasPending = savedSchedules.some(s => s.status === 'pending');
+    if (hasPending) return;
+
+    const mostRecent = nonPendingSchedules[0];
+    if (!mostRecent) return;
+
+    const lastWeek = mostRecent.weeks[mostRecent.weeks.length - 1];
+    const baseYear = new Date(mostRecent.createdAt).getFullYear();
+
+    let lastWeekDate = parseFrenchDate(lastWeek.date, baseYear);
+    const firstWeekDate = parseFrenchDate(mostRecent.weeks[0].date, baseYear);
+    if (lastWeekDate && firstWeekDate && lastWeekDate < firstWeekDate) {
+      lastWeekDate = parseFrenchDate(lastWeek.date, baseYear + 1);
+    }
+    if (!lastWeekDate) return;
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const threshold = new Date(lastWeekDate); threshold.setDate(threshold.getDate() - 7);
+    if (today < threshold) return;
+
+    const startDate = new Date(lastWeekDate); startDate.setDate(startDate.getDate() + 7);
+    const startMonth = startDate.getMonth();
+    const startYear = startDate.getFullYear();
+    const endMonthRaw = startMonth + 1;
+    const endMonth = endMonthRaw % 12;
+    const endYear = endMonthRaw >= 12 ? startYear + 1 : startYear;
+
+    const result = generateSchedule(members, startMonth, startYear, endMonth, endYear, 6, assignmentCounts);
+    const pending: SavedSchedule = {
+      id: crypto.randomUUID(),
+      title: result.title,
+      weeks: result.schedule,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    };
+    saveSchedule(pending).catch(console.error);
+  }, [savedSchedules, automationEnabled, automationChecked, isAdmin, members]);
 
   const persist = useCallback(async (updated: Member[]) => {
     setMembers(updated);
@@ -377,6 +439,31 @@ export default function App() {
     }
   };
 
+  const handleApproveSchedule = async (pending: SavedSchedule, result: { sentCount: number; failedCount: number; results: { memberName: string; success: boolean; error?: string }[] }) => {
+    const approved: SavedSchedule = { id: pending.id, title: pending.title, weeks: pending.weeks, createdAt: pending.createdAt };
+    await saveSchedule(approved);
+    const log: SendLog = {
+      id: crypto.randomUUID(),
+      sentAt: new Date().toISOString(),
+      scheduleTitle: pending.title,
+      testMode: false,
+      sentCount: result.sentCount,
+      failedCount: result.failedCount,
+      recipients: result.results.map(r => ({
+        name: r.memberName,
+        email: members.find(m => m.name === r.memberName)?.email ?? '',
+        success: r.success,
+        error: r.error,
+      })),
+    };
+    await saveSendLog(log);
+    handleSelectSchedule(approved);
+  };
+
+  const handleRejectSchedule = async (id: string) => {
+    await deleteSchedule(id);
+  };
+
   const handleDownloadPDF = async () => {
     if (!schedule) return;
     const { pdf } = await import("@react-pdf/renderer");
@@ -414,6 +501,17 @@ export default function App() {
             </div>
           </button>
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg" title="Génération automatique des horaires">
+                <span className="text-xs font-medium text-gray-600 hidden sm:inline">Auto</span>
+                <button
+                  onClick={() => { const next = !automationEnabled; setAutomationEnabled(next); saveAutomationEnabled(next).catch(console.error); }}
+                  className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${automationEnabled ? "bg-orange-500" : "bg-gray-300"}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${automationEnabled ? "translate-x-4" : ""}`} />
+                </button>
+              </div>
+            )}
             <nav className="flex border border-gray-200 rounded-lg overflow-hidden">
               <button
                 onClick={() => setView("schedule")}
@@ -475,6 +573,14 @@ export default function App() {
       <main className="max-w-6xl mx-auto p-6">
         {view === "schedule" && (
           <div className="space-y-6">
+            {pendingSchedule && (
+              <PendingScheduleBanner
+                pendingSchedule={pendingSchedule}
+                members={members}
+                onApprove={(result) => handleApproveSchedule(pendingSchedule, result)}
+                onReject={() => handleRejectSchedule(pendingSchedule.id)}
+              />
+            )}
             {/* Stat cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
@@ -551,16 +657,16 @@ export default function App() {
             )}
 
             {/* Saved schedules */}
-            {savedSchedules.length > 0 && (
+            {nonPendingSchedules.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.5v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  Horaires sauvegardés ({savedSchedules.length})
+                  Horaires sauvegardés ({nonPendingSchedules.length})
                 </h3>
                 <div className="space-y-2">
-                  {savedSchedules.map((saved) => (
+                  {nonPendingSchedules.map((saved) => (
                     <div
                       key={saved.id}
                       className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
@@ -689,7 +795,7 @@ export default function App() {
               }}
               onDelete={handleDelete}
               isAdmin={isAdmin}
-              taskCounts={computeFutureTaskCounts(savedSchedules)}
+              taskCounts={computeFutureTaskCounts(nonPendingSchedules)}
             />
           </div>
         )}

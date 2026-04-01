@@ -45,6 +45,7 @@ export interface SavedSchedule {
   title: string;
   weeks: WeekAssignment[];
   createdAt: string; // ISO date string
+  status?: 'pending';
 }
 
 export interface SendLogRecipient {
