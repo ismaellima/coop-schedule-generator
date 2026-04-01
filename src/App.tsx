@@ -510,6 +510,46 @@ export default function App() {
               </div>
             </div>
 
+            {/* Schedule result or empty state */}
+            {schedule ? (
+              <div className="space-y-4">
+                <ScheduleTable title={scheduleTitle} weeks={schedule} />
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Télécharger PDF
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setShowSendScheduleModal(true)}
+                        className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Envoyer aux membres
+                      </button>
+
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+                <CalendarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg font-semibold text-gray-700">Aucun horaire généré</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Utilisez le générateur ci-dessous pour créer un nouvel horaire de ménage.
+                </p>
+              </div>
+            )}
+
             {/* Saved schedules */}
             {savedSchedules.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -557,46 +597,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Schedule result or empty state */}
-            {schedule ? (
-              <div className="space-y-4">
-                <ScheduleTable title={scheduleTitle} weeks={schedule} />
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleDownloadPDF}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Télécharger PDF
-                  </button>
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={() => setShowSendScheduleModal(true)}
-                        className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Envoyer aux membres
-                      </button>
-
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-                <CalendarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-semibold text-gray-700">Aucun horaire généré</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Utilisez le générateur ci-dessous pour créer un nouvel horaire de ménage.
-                </p>
               </div>
             )}
 
