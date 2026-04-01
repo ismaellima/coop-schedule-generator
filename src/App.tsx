@@ -303,6 +303,13 @@ export default function App() {
     };
   }, []);
 
+  // Auto-select the most recent saved schedule when none is selected
+  useEffect(() => {
+    if (savedSchedules.length > 0 && selectedScheduleId === null && schedule === null) {
+      handleSelectSchedule(savedSchedules[0]);
+    }
+  }, [savedSchedules]);
+
   const persist = useCallback(async (updated: Member[]) => {
     setMembers(updated);
     await saveMembers(updated);
@@ -503,6 +510,96 @@ export default function App() {
               </div>
             </div>
 
+            {/* Saved schedules */}
+            {savedSchedules.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.5v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Horaires sauvegardés ({savedSchedules.length})
+                </h3>
+                <div className="space-y-2">
+                  {savedSchedules.map((saved) => (
+                    <div
+                      key={saved.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        selectedScheduleId === saved.id
+                          ? "border-orange-400 bg-orange-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <button
+                        onClick={() => handleSelectSchedule(saved)}
+                        className="flex-1 text-left flex items-center gap-3"
+                      >
+                        <CalendarIcon className={`w-5 h-5 ${selectedScheduleId === saved.id ? "text-orange-500" : "text-gray-400"}`} />
+                        <div>
+                          <p className={`font-medium ${selectedScheduleId === saved.id ? "text-orange-700" : "text-gray-900"}`}>
+                            {saved.title}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {saved.weeks.length} semaines - Créé le {new Date(saved.createdAt).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
+                          </p>
+                        </div>
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteSchedule(saved.id)}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Supprimer"
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Schedule result or empty state */}
+            {schedule ? (
+              <div className="space-y-4">
+                <ScheduleTable title={scheduleTitle} weeks={schedule} />
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Télécharger PDF
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setShowSendScheduleModal(true)}
+                        className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Envoyer aux membres
+                      </button>
+
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+                <CalendarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg font-semibold text-gray-700">Aucun horaire généré</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Utilisez le générateur ci-dessous pour créer un nouvel horaire de ménage.
+                </p>
+              </div>
+            )}
+
             {/* Generator card - only for admin */}
             {isAdmin && (
               <div className="bg-white rounded-xl border-2 border-dashed border-orange-300 p-6">
@@ -559,95 +656,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Schedule result or empty state */}
-            {schedule ? (
-              <div className="space-y-4">
-                <ScheduleTable title={scheduleTitle} weeks={schedule} />
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleDownloadPDF}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Télécharger PDF
-                  </button>
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={() => setShowSendScheduleModal(true)}
-                        className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Envoyer aux membres
-                      </button>
-
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-                <CalendarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-semibold text-gray-700">Aucun horaire généré</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Utilisez le générateur ci-dessus pour créer un nouvel horaire de ménage.
-                </p>
-              </div>
-            )}
-
-            {/* Saved schedules */}
-            {savedSchedules.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Horaires sauvegardés ({savedSchedules.length})
-                </h3>
-                <div className="space-y-2">
-                  {savedSchedules.map((saved) => (
-                    <div
-                      key={saved.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        selectedScheduleId === saved.id
-                          ? "border-orange-400 bg-orange-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <button
-                        onClick={() => handleSelectSchedule(saved)}
-                        className="flex-1 text-left flex items-center gap-3"
-                      >
-                        <CalendarIcon className={`w-5 h-5 ${selectedScheduleId === saved.id ? "text-orange-500" : "text-gray-400"}`} />
-                        <div>
-                          <p className={`font-medium ${selectedScheduleId === saved.id ? "text-orange-700" : "text-gray-900"}`}>
-                            {saved.title}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {saved.weeks.length} semaines - Créé le {new Date(saved.createdAt).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                          </p>
-                        </div>
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDeleteSchedule(saved.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                          title="Supprimer"
-                        >
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
