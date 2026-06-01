@@ -77,9 +77,12 @@ export function generateSchedule(
   const active = members.filter((m) => m.active);
   const dates = getWeekDates(startMonth, startYear, endMonth, endYear, dayOfWeek);
 
-  // Start with historical counts, defaulting to 0 for members without history
+  // Start with historical counts. New members (no history) start at the minimum
+  // existing count so they aren't over-assigned while "catching up".
+  const existingCounts = Object.values(initialCounts);
+  const minCount = existingCounts.length > 0 ? Math.min(...existingCounts) : 0;
   const assignmentCount: Record<string, number> = {};
-  active.forEach((m) => (assignmentCount[m.id] = initialCounts[m.id] ?? 0));
+  active.forEach((m) => (assignmentCount[m.id] = initialCounts[m.id] ?? minCount));
 
   const weeks: WeekAssignment[] = [];
 
