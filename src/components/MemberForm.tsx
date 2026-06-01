@@ -176,21 +176,23 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
               ))}
             </div>
           )}
-          <div className="flex gap-2 items-center">
-            <input
-              type="date"
-              value={newFrom}
-              onChange={(e) => setNewFrom(e.target.value)}
-              className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
-            />
-            <span className="text-gray-400 text-sm">→</span>
-            <input
-              type="date"
-              value={newTo}
-              min={newFrom}
-              onChange={(e) => setNewTo(e.target.value)}
-              className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
-            />
+          <div className="space-y-2">
+            <div className="flex gap-2 items-center">
+              <input
+                type="date"
+                value={newFrom}
+                onChange={(e) => setNewFrom(e.target.value)}
+                className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
+              />
+              <span className="text-gray-400 text-sm">→</span>
+              <input
+                type="date"
+                value={newTo}
+                min={newFrom}
+                onChange={(e) => setNewTo(e.target.value)}
+                className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
+              />
+            </div>
             <button
               type="button"
               disabled={!newFrom || !newTo || newTo < newFrom}
@@ -199,7 +201,7 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
                 setNewFrom("");
                 setNewTo("");
               }}
-              className="bg-orange-400 disabled:opacity-40 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-orange-500 transition-colors"
+              className="w-full bg-orange-400 disabled:opacity-40 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-orange-500 transition-colors"
             >
               Ajouter
             </button>
