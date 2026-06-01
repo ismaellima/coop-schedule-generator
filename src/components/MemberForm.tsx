@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Member, Floor } from "../lib/types";
+import type { Member, Floor, UnavailablePeriod } from "../lib/types";
 const uuid = () => crypto.randomUUID();
 
 interface Props {
@@ -21,6 +21,9 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
   const [floor, setFloor] = useState<Floor>("rez-de-chaussee");
   const [reducedMobility, setReducedMobility] = useState(false);
   const [pairedWith, setPairedWith] = useState<string>("");
+  const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([]);
+  const [newFrom, setNewFrom] = useState("");
+  const [newTo, setNewTo] = useState("");
 
   useEffect(() => {
     if (member) {
@@ -29,6 +32,7 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
       setFloor(member.floorRestrictions[0] || "rez-de-chaussee");
       setReducedMobility(member.roleRestrictions.length > 0);
       setPairedWith(member.pairedWith || "");
+      setUnavailablePeriods(member.unavailablePeriods || []);
     }
   }, [member]);
 
@@ -43,6 +47,7 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
       roleRestrictions: reducedMobility ? ["balayeuse"] : [],
       pairedWith: pairedWith || null,
       active: true,
+      unavailablePeriods,
     });
   };
 
@@ -144,6 +149,57 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
               }`}
             />
           </button>
+        </div>
+
+        {/* Unavailable periods */}
+        <div>
+          <p className="text-sm font-semibold text-gray-800 mb-2">Périodes d'indisponibilité</p>
+          {unavailablePeriods.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {unavailablePeriods.map((p, i) => (
+                <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                  <span className="text-sm text-gray-700">{p.from} → {p.to}</span>
+                  <button
+                    type="button"
+                    onClick={() => setUnavailablePeriods(unavailablePeriods.filter((_, j) => j !== i))}
+                    className="text-gray-400 hover:text-red-400 transition-colors ml-2"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              value={newFrom}
+              onChange={(e) => setNewFrom(e.target.value)}
+              className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
+            />
+            <span className="text-gray-400 text-sm">→</span>
+            <input
+              type="date"
+              value={newTo}
+              min={newFrom}
+              onChange={(e) => setNewTo(e.target.value)}
+              className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2 focus:border-orange-400 outline-none transition-colors text-sm text-gray-900"
+            />
+            <button
+              type="button"
+              disabled={!newFrom || !newTo || newTo < newFrom}
+              onClick={() => {
+                setUnavailablePeriods([...unavailablePeriods, { from: newFrom, to: newTo }]);
+                setNewFrom("");
+                setNewTo("");
+              }}
+              className="bg-orange-400 disabled:opacity-40 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-orange-500 transition-colors"
+            >
+              Ajouter
+            </button>
+          </div>
         </div>
 
         {/* Buttons */}

@@ -17,6 +17,16 @@ function hasReducedMobility(member: Member): boolean {
   return member.roleRestrictions.length > 0;
 }
 
+function isUnavailable(member: Member, date: Date): boolean {
+  if (!member.unavailablePeriods?.length) return false;
+  const d = date.getTime();
+  return member.unavailablePeriods.some(({ from, to }) => {
+    const start = new Date(from + "T00:00:00").getTime();
+    const end = new Date(to + "T00:00:00").getTime();
+    return d >= start && d <= end;
+  });
+}
+
 function canFillSlot(member: Member, slot: SlotDef): boolean {
   // Reduced mobility members can only do their allowed roles
   if (hasReducedMobility(member) && !member.roleRestrictions.includes(slot.role)) {
@@ -113,7 +123,7 @@ export function generateSchedule(
 
     for (const { key, def } of slotOrder) {
       let candidates = active.filter(
-        (m) => !assigned.has(m.id) && canFillSlot(m, def)
+        (m) => !assigned.has(m.id) && canFillSlot(m, def) && !isUnavailable(m, date)
       );
 
       // If a paired member is already assigned, prioritize their partner

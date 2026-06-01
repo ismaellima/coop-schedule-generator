@@ -16,6 +16,11 @@ export const ROLE_LABELS: Record<Role, string> = {
   "vadrouille-arriere": "Vadrouille arrière",
 };
 
+export interface UnavailablePeriod {
+  from: string; // ISO date string (YYYY-MM-DD)
+  to: string;   // ISO date string (YYYY-MM-DD), inclusive
+}
+
 export interface Member {
   id: string;
   name: string;
@@ -24,6 +29,7 @@ export interface Member {
   roleRestrictions: Role[];   // if non-empty, can ONLY do these roles
   pairedWith: string | null;  // member ID — must be scheduled same week
   active: boolean;
+  unavailablePeriods?: UnavailablePeriod[];
 }
 
 export interface WeekAssignment {

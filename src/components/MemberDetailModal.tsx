@@ -149,6 +149,21 @@ export function MemberDetailModal({ member, allMembers, schedules, isAdmin, onEd
             )}
           </div>
 
+          {/* Unavailable periods */}
+          {member.unavailablePeriods && member.unavailablePeriods.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Périodes d'indisponibilité</h4>
+              <div className="space-y-2">
+                {member.unavailablePeriods.map((p, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                    <span className="text-sm text-amber-800">{p.from} → {p.to}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Upcoming tasks */}
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-3">
