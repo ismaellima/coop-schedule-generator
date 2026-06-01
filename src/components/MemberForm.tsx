@@ -58,22 +58,26 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 space-y-6 relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] relative"
       >
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onCancel}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-          </svg>
-        </button>
+        {/* Header */}
+        <div className="flex items-center justify-between p-8 pb-0 flex-shrink-0">
+          <h3 className="text-xl font-bold text-gray-900">
+            {member ? "Modifier le membre" : "Ajouter un membre"}
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+            </svg>
+          </button>
+        </div>
 
-        <h3 className="text-xl font-bold text-gray-900">
-          {member ? "Modifier le membre" : "Ajouter un membre"}
-        </h3>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-8 py-6 space-y-6">
 
         {/* Name */}
         <div>
@@ -202,8 +206,10 @@ export function MemberForm({ member, allMembers, onSave, onCancel }: Props) {
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3 justify-end pt-2">
+        </div>{/* end scrollable body */}
+
+        {/* Buttons — fixed at bottom */}
+        <div className="flex gap-3 justify-end px-8 py-5 border-t border-gray-100 flex-shrink-0">
           <button
             type="button"
             onClick={onCancel}
