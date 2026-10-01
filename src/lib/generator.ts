@@ -94,6 +94,11 @@ export function generateSchedule(
   const assignmentCount: Record<string, number> = {};
   active.forEach((m) => (assignmentCount[m.id] = initialCounts[m.id] ?? minCount));
 
+  // Assignments within this schedule. Spread these first so a member who is
+  // behind on history (e.g. after time off) doesn't "catch up" in one period.
+  const periodCount: Record<string, number> = {};
+  active.forEach((m) => (periodCount[m.id] = 0));
+
   const weeks: WeekAssignment[] = [];
 
   for (const date of dates) {
@@ -139,14 +144,21 @@ export function generateSchedule(
         }
       }
 
-      // Sort: least assigned first
+      // Sort: fewest assignments this period first, then least assigned overall
       candidates.sort((a, b) => {
-        return assignmentCount[a.id] - assignmentCount[b.id];
+        return (
+          periodCount[a.id] - periodCount[b.id] ||
+          assignmentCount[a.id] - assignmentCount[b.id]
+        );
       });
 
       if (candidates.length > 0) {
-        const minCount = assignmentCount[candidates[0].id];
-        const topCandidates = candidates.filter((c) => assignmentCount[c.id] === minCount);
+        const best = candidates[0];
+        const topCandidates = candidates.filter(
+          (c) =>
+            periodCount[c.id] === periodCount[best.id] &&
+            assignmentCount[c.id] === assignmentCount[best.id]
+        );
 
         // Prefer paired members who need their partner assigned too
         const pairedCandidate = topCandidates.find((c) => {
@@ -159,6 +171,7 @@ export function generateSchedule(
           week[key] = chosen.name;
           assigned.add(chosen.id);
           assignmentCount[chosen.id]++;
+          periodCount[chosen.id]++;
         } else {
           week[key] = "—";
         }
@@ -188,6 +201,8 @@ export function generateSchedule(
             assigned.add(missing.id);
             assignmentCount[currentMember.id]--;
             assignmentCount[missing.id]++;
+            periodCount[currentMember.id]--;
+            periodCount[missing.id]++;
             break;
           }
         }
